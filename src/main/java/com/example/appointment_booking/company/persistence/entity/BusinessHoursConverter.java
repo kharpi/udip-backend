@@ -13,7 +13,7 @@ public class BusinessHoursConverter implements AttributeConverter<Set<BusinessHo
     public String convertToDatabaseColumn(Set<BusinessHours> businessHoursSet) {
         StringBuilder str = new StringBuilder();
         for (BusinessHours hours : businessHoursSet) {
-            str.append(hours.getDay().getValue())
+            str.append(hours.getDay().name())
                     .append(":")
                     .append(hours.getFrom())
                     .append("-")
@@ -33,7 +33,7 @@ public class BusinessHoursConverter implements AttributeConverter<Set<BusinessHo
         String[] businessHours = s.split(",");
         for (String hours : businessHours) {
             String[] hoursArray = hours.split(":");
-            DayOfWeek day = DayOfWeek.of(Integer.parseInt(hoursArray[0]));
+            DayOfWeek day = DayOfWeek.valueOf(hoursArray[0].toUpperCase());
 
             result.add(new BusinessHours(day, Integer.parseInt(hoursArray[1].split("-")[0])
                     , Integer.parseInt(hoursArray[1].split("-")[1])));

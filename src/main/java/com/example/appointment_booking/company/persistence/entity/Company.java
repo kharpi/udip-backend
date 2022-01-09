@@ -1,10 +1,10 @@
 package com.example.appointment_booking.company.persistence.entity;
 
 import com.example.appointment_booking.service.persistence.entity.Service;
-import com.sun.istack.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.lang.Nullable;
 
 import javax.persistence.*;
 import java.util.HashSet;
@@ -13,9 +13,14 @@ import java.util.Set;
 
 @Entity
 @Data
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class Company {
     @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+
     private String name;
 
     private String address;

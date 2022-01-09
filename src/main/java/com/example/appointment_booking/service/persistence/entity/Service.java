@@ -12,6 +12,7 @@ import javax.persistence.*;
 public class Service {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name="service_id")
     private Long id;
 
     private String name;
@@ -21,7 +22,7 @@ public class Service {
     private Integer duration;
 
     @ManyToOne()
-    @JoinColumn(name = "company_name")
+    @JoinColumn(name = "company_id")
     private Company company;
 
     public Service(String name, String description, Integer duration, Company company) {
