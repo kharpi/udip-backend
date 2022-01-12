@@ -4,6 +4,7 @@ import lombok.Getter;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Getter
 public class BusinessHours {
@@ -18,9 +19,18 @@ public class BusinessHours {
         this.to = to;
     }
 
-    public boolean isOpen(LocalDateTime start) {
+    public static boolean isInOpening(Set<BusinessHours> businessHours,LocalDateTime date){
+        for(BusinessHours businessHour: businessHours){
+            if(businessHour.isOpen(date)){
+                return true;
+            }
+        }
+        return false;
+    }
 
-        if (day != start.getDayOfWeek()) {
+    public boolean isOpen(LocalDateTime date) {
+
+        if (day != date.getDayOfWeek()) {
             return false;
         }
 
@@ -33,13 +43,13 @@ public class BusinessHours {
         int toHour = Integer.parseInt(t.substring(0, 2));
         int toMinute = Integer.parseInt(t.substring(2));
 
-        LocalDateTime intStart = start.withHour(fromHour).withMinute(fromMinute);
-        LocalDateTime intEnd = start.withHour(toHour).withMinute(toMinute);
+        LocalDateTime intStart = date.withHour(fromHour).withMinute(fromMinute);
+        LocalDateTime intEnd = date.withHour(toHour).withMinute(toMinute);
 
-        if (intStart.equals(start)) {
+        if (intStart.equals(date)) {
             return true;
         }
-        return intStart.isBefore(start) && intEnd.isAfter(start);
+        return intStart.isBefore(date) && intEnd.isAfter(date);
 
     }
 }

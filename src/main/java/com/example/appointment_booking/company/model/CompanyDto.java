@@ -2,14 +2,15 @@ package com.example.appointment_booking.company.model;
 
 import com.example.appointment_booking.company.persistence.entity.BusinessHours;
 import com.example.appointment_booking.company.persistence.entity.BusinessHoursConverter;
-import com.example.appointment_booking.service.persistence.entity.Service;
+import com.example.appointment_booking.work.persistence.entity.Work;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -22,7 +23,8 @@ public class CompanyDto {
     private String name;
     private String address;
     private String businessHours;
-    private List<Service> services;
+
+    private List<Work> works;
 
     private final static BusinessHoursConverter businessHoursConverter= new BusinessHoursConverter();
 
@@ -31,7 +33,7 @@ public class CompanyDto {
         this.name = name;
         this.address = address;
         this.businessHours = businessHours;
-        this.services = new ArrayList<>();
+        this.works = new ArrayList<>();
     }
 
     public CompanyDto(Long id,String name, String address, String businessHours) {
@@ -39,7 +41,7 @@ public class CompanyDto {
         this.name = name;
         this.address = address;
         this.businessHours = businessHours;
-        this.services = new ArrayList<>();
+        this.works = new ArrayList<>();
     }
 
     public Set<BusinessHours> getBusinessHoursAsSet(){

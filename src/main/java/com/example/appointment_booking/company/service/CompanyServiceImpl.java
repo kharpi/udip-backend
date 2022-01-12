@@ -1,9 +1,12 @@
 package com.example.appointment_booking.company.service;
 
+import com.example.appointment_booking.company.persistence.entity.BusinessHoursConverter;
 import com.example.appointment_booking.company.persistence.entity.Company;
 import com.example.appointment_booking.company.model.CompanyDto;
 import com.example.appointment_booking.company.persistence.repository.CompanyRepository;
+import com.example.appointment_booking.exception.CustomException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,44 +21,49 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     public void createCompany(CompanyDto companyDto) {
-        if(isValidCompany(companyDto)){
-            companyRepository.save(convertDtoToEntity(companyDto));
+        if (!isValidCompany(companyDto)) {
+            throw new CustomException("Required fields cannot be null", HttpStatus.UNPROCESSABLE_ENTITY);
+
         }
-        //Todo throw custom exception otherwise
+        companyRepository.save(convertDtoToEntity(companyDto));
     }
 
     @Override
     public void updateCompany(CompanyDto companyDto) {
-        if(isValidCompany(companyDto) && companyRepository.existsById(companyDto.getId())){
-            companyRepository.save(convertDtoToEntity(companyDto));
+        if(!companyRepository.existsById(companyDto.getId())){
+            throw new CustomException("The specified company cannot be found", HttpStatus.NOT_FOUND);
         }
-        //Todo throw custom exception otherwise
+        if (!isValidCompany(companyDto)) {
+            throw new CustomException("Required fields cannot be null", HttpStatus.NOT_FOUND);
+        }
+        companyRepository.save(convertDtoToEntity(companyDto));
     }
 
     @Override
     public void deleteCompany(Long id) {
-        Company company = companyRepository.findById(id).orElseThrow(); //Todo
-        if(company.getServices().isEmpty()){
-            companyRepository.delete(company);
+        Company company = companyRepository.findById(id)
+                .orElseThrow(() -> new CustomException("The specified company cannot be found", HttpStatus.NOT_FOUND));
+        if (!company.getWorks().isEmpty()) {
+            throw new CustomException("Cannot delete company while there are services linked to it", HttpStatus.CONFLICT);
         }
-        //Todo throw custom exception otherwise
+        companyRepository.delete(company);
     }
 
-    private boolean isValidCompany(CompanyDto companyDto){
-        if(companyDto==null ||companyDto.getName()==null|| companyDto.getAddress() == null
-                || companyDto.getBusinessHours()==null){
+    private boolean isValidCompany(CompanyDto companyDto) {
+        if (companyDto == null || companyDto.getName() == null || companyDto.getAddress() == null
+                || companyDto.getBusinessHours() == null) {
             return false;
         }
         return true;
     }
 
-    private Company convertDtoToEntity(CompanyDto companyDto){
+    private Company convertDtoToEntity(CompanyDto companyDto) {
         return Company.builder()
                 .id(companyDto.getId())
                 .name(companyDto.getName())
                 .address(companyDto.getAddress())
                 .businessHours(companyDto.getBusinessHoursAsSet())
-                .services(companyDto.getServices())
+                .works(companyDto.getWorks())
                 .build();
     }
 

@@ -1,6 +1,6 @@
 package com.example.appointment_booking.company.persistence.entity;
 
-import com.example.appointment_booking.service.persistence.entity.Service;
+import com.example.appointment_booking.work.persistence.entity.Work;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,7 +30,7 @@ public class Company {
     private Set<BusinessHours> businessHours;
 
     @OneToMany(mappedBy = "company")
-    private List<Service> services;
+    private List<Work> works;
 
     public Company(String name, String address, HashSet<BusinessHours> businessHours) {
         this.name = name;
