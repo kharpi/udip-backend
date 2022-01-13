@@ -8,8 +8,9 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/service")
+@CrossOrigin(origins = "http://localhost:3000")
 public class WorkController {
-    private WorkService workService;
+    private final WorkService workService;
 
     @Autowired
     public WorkController(WorkService workService) {

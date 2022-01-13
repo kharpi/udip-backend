@@ -1,6 +1,5 @@
 package com.example.appointment_booking.company.service;
 
-import com.example.appointment_booking.company.persistence.entity.BusinessHoursConverter;
 import com.example.appointment_booking.company.persistence.entity.Company;
 import com.example.appointment_booking.company.model.CompanyDto;
 import com.example.appointment_booking.company.persistence.repository.CompanyRepository;
@@ -8,6 +7,9 @@ import com.example.appointment_booking.exception.CustomException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CompanyServiceImpl implements CompanyService {
@@ -22,7 +24,7 @@ public class CompanyServiceImpl implements CompanyService {
     @Override
     public void createCompany(CompanyDto companyDto) {
         if (!isValidCompany(companyDto)) {
-            throw new CustomException("Required fields cannot be null", HttpStatus.UNPROCESSABLE_ENTITY);
+            throw new CustomException("Required fields cannot be null or empty", HttpStatus.UNPROCESSABLE_ENTITY);
 
         }
         companyRepository.save(convertDtoToEntity(companyDto));
@@ -34,7 +36,7 @@ public class CompanyServiceImpl implements CompanyService {
             throw new CustomException("The specified company cannot be found", HttpStatus.NOT_FOUND);
         }
         if (!isValidCompany(companyDto)) {
-            throw new CustomException("Required fields cannot be null", HttpStatus.NOT_FOUND);
+            throw new CustomException("Required fields cannot be null or empty", HttpStatus.NOT_FOUND);
         }
         companyRepository.save(convertDtoToEntity(companyDto));
     }
@@ -49,9 +51,15 @@ public class CompanyServiceImpl implements CompanyService {
         companyRepository.delete(company);
     }
 
+    @Override
+    public List<CompanyDto> getAllCompanies(){
+        return companyRepository.findAll().stream().map(this::convertEntityToDto).collect(Collectors.toList());
+    };
+
     private boolean isValidCompany(CompanyDto companyDto) {
-        if (companyDto == null || companyDto.getName() == null || companyDto.getAddress() == null
-                || companyDto.getBusinessHours() == null) {
+        if (companyDto == null || companyDto.getName() == null || "".equals(companyDto.getName())
+                || companyDto.getAddress() == null || "".equals(companyDto.getAddress())
+                || companyDto.getBusinessHours() == null || "".equals(companyDto.getBusinessHours())) {
             return false;
         }
         return true;
@@ -64,6 +72,16 @@ public class CompanyServiceImpl implements CompanyService {
                 .address(companyDto.getAddress())
                 .businessHours(companyDto.getBusinessHoursAsSet())
                 .works(companyDto.getWorks())
+                .build();
+    }
+
+    private CompanyDto convertEntityToDto(Company company) {
+        return CompanyDto.builder()
+                .id(company.getId())
+                .name(company.getName())
+                .address(company.getAddress())
+                .businessHours(CompanyDto.convertBusinessHoursSetToString(company.getBusinessHours()))
+                .works(company.getWorks())
                 .build();
     }
 

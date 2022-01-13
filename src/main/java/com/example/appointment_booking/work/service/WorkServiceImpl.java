@@ -1,6 +1,5 @@
 package com.example.appointment_booking.work.service;
 
-import com.example.appointment_booking.company.persistence.entity.Company;
 import com.example.appointment_booking.company.persistence.repository.CompanyRepository;
 import com.example.appointment_booking.exception.CustomException;
 import com.example.appointment_booking.work.model.WorkDto;
@@ -10,11 +9,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class WorkServiceImpl implements WorkService {
 
-    private WorkRepository workRepository;
-    private CompanyRepository companyRepository;
+    private final WorkRepository workRepository;
+    private final CompanyRepository companyRepository;
+
+    private final static int BREAK_TIME_IN_MIN = 5;
 
     @Autowired
     public WorkServiceImpl(WorkRepository workRepository, CompanyRepository companyRepository) {
@@ -34,7 +38,7 @@ public class WorkServiceImpl implements WorkService {
 
     @Override
     public void updateWork(WorkDto workDto) {
-        if(!workRepository.existsById(workDto.getId())){
+        if (!workRepository.existsById(workDto.getId())) {
             throw new CustomException("The specified service cannot be found", HttpStatus.NOT_FOUND);
         }
         if (!isValidWork(workDto)) {
@@ -56,6 +60,16 @@ public class WorkServiceImpl implements WorkService {
             throw new CustomException("Cannot delete service while there are reservations linked to it", HttpStatus.CONFLICT);
         }
         workRepository.delete(work);
+    }
+
+    @Override
+    public int getDurationForServices(List<Work> services) {
+        return services.stream().mapToInt(Work::getDuration).sum() + (BREAK_TIME_IN_MIN * (services.size() - 1));
+    }
+
+    @Override
+    public List<Work> getServicesByIDs(List<Long> ids){ //TODO ha nem létezik az id
+        return ids.stream().map(i -> workRepository.getById(i)).collect(Collectors.toList());
     }
 
     private boolean isValidWork(WorkDto workDto) {

@@ -1,5 +1,6 @@
 package com.example.appointment_booking.reservation.service;
 
+import com.example.appointment_booking.DateConverter;
 import com.example.appointment_booking.company.persistence.entity.BusinessHours;
 import com.example.appointment_booking.company.persistence.entity.Company;
 import com.example.appointment_booking.exception.CustomException;
@@ -8,37 +9,40 @@ import com.example.appointment_booking.reservation.model.ReservationHelper;
 import com.example.appointment_booking.reservation.persistence.entity.Reservation;
 import com.example.appointment_booking.reservation.persistence.repository.ReservationRepository;
 import com.example.appointment_booking.work.persistence.entity.Work;
+import com.example.appointment_booking.work.service.WorkService;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class ReservationServiceImpl implements ReservationService {
 
-    private final static int BREAK_TIME_IN_MIN = 5;
 
-    private ReservationRepository reservationRepository;
-    private ReservationHelper reservationHelper;
+    private final ReservationRepository reservationRepository;
+    private final ReservationHelper reservationHelper;
+    private final WorkService workService;
 
 
     @Autowired
-    public ReservationServiceImpl(ReservationRepository reservationRepository, ReservationHelper reservationHelper) {
+    public ReservationServiceImpl(ReservationRepository reservationRepository, ReservationHelper reservationHelper, WorkService workService) {
         this.reservationRepository = reservationRepository;
         this.reservationHelper = reservationHelper;
+        this.workService = workService;
     }
 
     @Override
     public void createReservation(ReservationDto reservationDto) {
-        if(isValidReservation(reservationDto)){
-           reservationRepository.save(convertDtoToEntity(reservationDto));
+        Reservation reservation = convertDtoToEntity(reservationDto);
+        reservation.setDuration(workService.getDurationForServices(reservation.getServices()));
+
+        if (isValidReservation(reservation)) {
+            reservationRepository.save(reservation);
         }
     }
 
@@ -55,19 +59,22 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.deleteById(id);
     }
 
-    boolean isValidReservation(ReservationDto reservationDto) {
-        return areRequiredFieldsNonNull(reservationDto)
-                && isValidEmail(reservationDto.getEmail())
-                && isValidPhoneNumber(reservationDto.getPhone())
-                && isReservationFromOneCompany(reservationDto)
-                && isValidAppointment(reservationDto)
-                && isAvailableAppointment(reservationDto);
+    boolean isValidReservation(Reservation reservation) {
+        Company company = getCompanyFromServices(reservation.getServices());
+        LocalDateTime start = reservation.getDate();
+        LocalDateTime end = start.plusMinutes(reservation.getDuration());
+
+        return areRequiredFieldsNonNull(reservation)
+                && isValidEmail(reservation.getEmail())
+                && isValidPhoneNumber(reservation.getPhone())
+                && isValidAppointment(company,start,end)
+                && isAvailableAppointment(company,start,end);
 
     }
 
-    boolean areRequiredFieldsNonNull(ReservationDto reservationDto) {
-        if (reservationDto == null || reservationDto.getName() == null || reservationDto.getPhone() == null
-                || reservationDto.getEmail() == null) {
+    boolean areRequiredFieldsNonNull(Reservation reservation) { //TODO
+        if (reservation == null || reservation.getName() == null || reservation.getPhone() == null
+                || reservation.getEmail() == null) {
             throw new CustomException("Required fields cannot be null", HttpStatus.UNPROCESSABLE_ENTITY);
         }
         return true;
@@ -81,92 +88,90 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     boolean isValidPhoneNumber(String phone) {
-        //TODO
+        String regex = "(\\+?)[0-9]{11}";
+        if (!phone.matches(regex)) {
+            throw new CustomException("Invalid phone number", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
         return true;
     }
 
-    boolean isReservationFromOneCompany(ReservationDto reservationDto) {
-        boolean oneCompany = convertDtoToEntity(reservationDto)
-                .getServices()
-                .values()
+    Company getCompanyFromServices(List<Work> services) {
+        List<Company> companies = services
                 .stream()
-                .map(Work::getId)
-                .distinct().count() == 1;
-        if (!oneCompany) {
-            throw new CustomException("All reservations must be from one company", HttpStatus.UNPROCESSABLE_ENTITY);
-        }
-        return true;
-    }
-
-    boolean isValidAppointment(ReservationDto reservationDto) {
-        for (Map.Entry<LocalDateTime, Work> entry : convertDtoToEntity(reservationDto).getServices().entrySet()) {
-            LocalDateTime dateStart = entry.getKey();
-            LocalDateTime dateEnd = dateStart.plusMinutes(entry.getValue().getDuration());
-            Set<BusinessHours> businessHours = entry.getValue().getCompany().getBusinessHours();
-
-            if (dateStart.isBefore(LocalDateTime.now())) {
-                throw new CustomException("Invalid date", HttpStatus.UNPROCESSABLE_ENTITY);
-            }
-            if (dateStart.getDayOfYear()!=dateEnd.getDayOfYear()){
-                throw new CustomException("Reservation's start and end must be on the same day", HttpStatus.UNPROCESSABLE_ENTITY);
-            }
-            if(dateStart.getMinute()!=0 && dateStart.getMinute()!=30){
-                throw new CustomException("Reservation's start minute must be 0 or 30", HttpStatus.UNPROCESSABLE_ENTITY);
-            }
-            if(!BusinessHours.isInOpening(businessHours, dateStart) || !BusinessHours.isInOpening(businessHours, dateEnd)){
-                throw new CustomException("The company is not open at the selected time", HttpStatus.UNPROCESSABLE_ENTITY);
-            }
-        }
-        return true;
-    }
-
-
-    boolean isAvailableAppointment(ReservationDto reservationDto) {
-        List<Work> companyServices = getCompanyFromReservedService(reservationDto).getWorks();
-        for (Map.Entry<LocalDateTime, Work> entry : convertDtoToEntity(reservationDto).getServices().entrySet()) {
-            LocalDateTime searchedDateStart = entry.getKey();
-            int duration = entry.getValue().getDuration() + BREAK_TIME_IN_MIN;
-            LocalDateTime searchedDateEnd = searchedDateStart.plusMinutes(duration);
-
-            isOverlappingDate(companyServices, searchedDateStart, searchedDateEnd);
-        }
-        return true;
-    }
-
-    private void isOverlappingDate(List<Work> companyServices, LocalDateTime searchedDateStart, LocalDateTime searchedDateEnd) {
-        for (Work service : companyServices) {
-            int duration = service.getDuration() + BREAK_TIME_IN_MIN;
-            List<LocalDateTime> reservedDates = getReservedDatesForService(service);
-            for (LocalDateTime reservedDateStart : reservedDates) {
-                if (reservedDateStart.isAfter(searchedDateEnd)) {
-                    break;
-                }
-                LocalDateTime reservedDateEnd = reservedDateStart.plusMinutes(duration);
-                if (searchedDateStart.isBefore(reservedDateEnd) && reservedDateStart.isBefore(searchedDateEnd)) {
-                    throw new CustomException("Overlapping reservations", HttpStatus.UNPROCESSABLE_ENTITY);
-                }
-            }
-        }
-    }
-
-    private List<LocalDateTime> getReservedDatesForService(Work service){
-        return service.getReservations().stream()
-                .map(r -> r.getServices().entrySet())
-                .flatMap(Collection::stream)
-                .filter(e -> e.getValue().equals(service))
-                .map(Map.Entry::getKey)
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    Company getCompanyFromReservedService(ReservationDto reservationDto) {
-        if (!isReservationFromOneCompany(reservationDto)) {
-            throw new CustomException("All reservations must be from one company", HttpStatus.UNPROCESSABLE_ENTITY);
-        }
-        return convertDtoToEntity(reservationDto).getServices().values().stream()
                 .map(Work::getCompany)
-                .findFirst()
-                .orElseThrow(() -> new CustomException("You must choose a service", HttpStatus.UNPROCESSABLE_ENTITY));
+                .distinct()
+                .collect(Collectors.toList());
+        if (companies.size() > 1) {
+            throw new CustomException("All reservations must be from one company", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        return companies.get(0);
+    }
+
+    private boolean isValidAppointment(Company company, LocalDateTime start, LocalDateTime end) {
+        Set<BusinessHours> businessHours = company.getBusinessHours();
+        if (start.isBefore(LocalDateTime.now())) {
+            throw new CustomException("Invalid date", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        if (start.getMinute() != 0 && start.getMinute() != 30) {
+            throw new CustomException("Reservation's start minute must be 0 or 30", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        if (!BusinessHours.isInOpening(businessHours, start) || !BusinessHours.isInOpening(businessHours, end)) {
+            throw new CustomException("The company is not open at the selected time", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        if (start.getDayOfYear() != end.getDayOfYear()) {
+            throw new CustomException("Reservation's start and end must be on the same day", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        return true;
+    }
+
+    @Override
+    public List<String> getValidDates(List<Work> services,LocalDateTime dateFrom, LocalDateTime dateTo, int max) {
+        List<String> availableDates = new ArrayList<>();
+
+        int duration = workService.getDurationForServices(services);
+        Company company = getCompanyFromServices(services);
+        List<DayOfWeek> openDays = company.getBusinessHours().stream().map(BusinessHours::getDay).collect(Collectors.toList());
+
+        LocalDateTime date = dateFrom;
+        while (date.isBefore(dateTo) && availableDates.size() < max) {
+
+            LocalDateTime dateEnd = date.plusMinutes(duration);
+            if(!openDays.contains(date.getDayOfWeek())){
+                date = date.plusDays(1).withHour(0).withMinute(0);
+            }
+            try {
+                isValidAppointment(company,date, dateEnd);
+                isAvailableAppointment(company, date, dateEnd);
+                availableDates.add(DateConverter.convertDateToString(date));
+            } catch (CustomException ignored) {}
+            finally {
+                date = date.plusMinutes(30);
+            }
+        }
+        return availableDates;
+    }
+
+    private boolean isAvailableAppointment(Company company, LocalDateTime searchedStart, LocalDateTime searchedEnd) {
+        for(Reservation res : getReservationsForCompany(company)){
+            LocalDateTime reservedStart = res.getDate();
+            LocalDateTime reservedEnd = reservedStart.plusMinutes(res.getDuration());
+            if (reservedStart.isAfter(searchedEnd)) {
+                break;
+            }
+            if (searchedStart.isBefore(reservedEnd) && reservedStart.isBefore(searchedEnd)) {
+                throw new CustomException("Overlapping reservations", HttpStatus.UNPROCESSABLE_ENTITY);
+            }
+        }
+        return true;
+    }
+
+    private List<Reservation> getReservationsForCompany(Company company) {
+        return company.getWorks().stream()
+                .map(Work::getReservations)
+                .flatMap(Collection::stream)
+                .sorted(Comparator.comparing(Reservation::getDate))
+                .collect(Collectors.toList());
+
     }
 
     private ReservationDto convertEntityToDto(Reservation reservation) {
@@ -175,7 +180,8 @@ public class ReservationServiceImpl implements ReservationService {
                 .name(reservation.getName())
                 .phone(reservation.getPhone())
                 .email(reservation.getEmail())
-                .services(reservationHelper.convertServicesMapToString(reservation.getServices()))
+                .date(DateConverter.convertDateToString(reservation.getDate()))
+                .services(reservationHelper.convertServicesListToString(reservation.getServices()))
                 .build();
     }
 
@@ -185,7 +191,8 @@ public class ReservationServiceImpl implements ReservationService {
                 .name(reservationDto.getName())
                 .phone(reservationDto.getPhone())
                 .email(reservationDto.getEmail())
-                .services(reservationHelper.convertServicesStringToMap(reservationDto.getServices()))
+                .date(DateConverter.convertStringToDate(reservationDto.getDate()))
+                .services(reservationHelper.convertServicesStringToList(reservationDto.getServices()))
                 .build();
     }
 }

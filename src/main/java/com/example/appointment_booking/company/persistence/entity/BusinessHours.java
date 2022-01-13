@@ -49,7 +49,7 @@ public class BusinessHours {
         if (intStart.equals(date)) {
             return true;
         }
-        return intStart.isBefore(date) && intEnd.isAfter(date);
+        return intStart.isBefore(date) && intEnd.plusSeconds(1L).isAfter(date);
 
     }
 }

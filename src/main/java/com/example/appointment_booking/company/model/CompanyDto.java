@@ -24,6 +24,7 @@ public class CompanyDto {
     private String address;
     private String businessHours;
 
+    @JsonIgnore
     private List<Work> works;
 
     private final static BusinessHoursConverter businessHoursConverter= new BusinessHoursConverter();
@@ -46,5 +47,9 @@ public class CompanyDto {
 
     public Set<BusinessHours> getBusinessHoursAsSet(){
         return businessHoursConverter.convertToEntityAttribute(businessHours);
+    }
+
+    public static String convertBusinessHoursSetToString(Set<BusinessHours> businessHours){
+        return businessHoursConverter.convertToDatabaseColumn(businessHours);
     }
 }

@@ -25,29 +25,36 @@ public class Reservation {
     private String phone;
     private String email;
 
+    private LocalDateTime date;
+    private Integer duration;
+
     @ManyToMany
-    @MapKeyColumn(name="service_dates", columnDefinition = "TIMESTAMP")
-    private Map<LocalDateTime, Work> services = new HashMap<>();
+    List<Work> services= new ArrayList<>();
 
 
-    public Reservation(String name, String phone, String email) {
+   public Reservation(String name, String phone, String email, LocalDateTime date, List<Work> services) {
         this.name = name;
         this.phone = phone;
         this.email = email;
-    }
-
-   public Reservation(String name, String phone, String email, Map<LocalDateTime,Work> services) {
-        this.name = name;
-        this.phone = phone;
-        this.email = email;
+        this.date=date;
         this.services = services;
     }
 
-    public Reservation(String name, String phone, String email, Work service, LocalDateTime date) {
+    public Reservation(String name, String phone, String email, LocalDateTime date,int duration, List<Work> services) {
         this.name = name;
         this.phone = phone;
         this.email = email;
-        this.services.put(date,service);
+        this.date=date;
+        this.duration = duration;
+        this.services = services;
+    }
+
+    public Reservation(String name, String phone, String email,LocalDateTime date, Work service) {
+        this.name = name;
+        this.phone = phone;
+        this.email = email;
+        this.date = date;
+        this.services.add(service);
     }
 
 }
