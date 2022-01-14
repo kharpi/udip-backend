@@ -4,24 +4,25 @@ import lombok.Getter;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Set;
 
 @Getter
 public class BusinessHours {
 
     private final DayOfWeek day;
-    private final Integer from;
-    private final Integer to;
+    private final LocalTime from;
+    private final LocalTime to;
 
-    public BusinessHours(DayOfWeek day, Integer from, Integer to) {
+    public BusinessHours(DayOfWeek day, LocalTime from, LocalTime to) {
         this.day = day;
         this.from = from;
         this.to = to;
     }
 
-    public static boolean isInOpening(Set<BusinessHours> businessHours,LocalDateTime date){
-        for(BusinessHours businessHour: businessHours){
-            if(businessHour.isOpen(date)){
+    public static boolean isInOpening(Set<BusinessHours> businessHours, LocalDateTime date) {
+        for (BusinessHours businessHour : businessHours) {
+            if (businessHour.isOpen(date)) {
                 return true;
             }
         }
@@ -34,22 +35,13 @@ public class BusinessHours {
             return false;
         }
 
-        String f = String.format("%04d", from);
-        String t = String.format("%04d", to);
+        LocalDateTime dateStart = date.withHour(from.getHour()).withMinute(from.getMinute());
+        LocalDateTime dateEnd = date.withHour(to.getHour()).withMinute(to.getMinute());
 
-        int fromHour = Integer.parseInt(f.substring(0, 2));
-        int fromMinute = Integer.parseInt(f.substring(2));
-
-        int toHour = Integer.parseInt(t.substring(0, 2));
-        int toMinute = Integer.parseInt(t.substring(2));
-
-        LocalDateTime intStart = date.withHour(fromHour).withMinute(fromMinute);
-        LocalDateTime intEnd = date.withHour(toHour).withMinute(toMinute);
-
-        if (intStart.equals(date)) {
+        if (dateStart.equals(date)) {
             return true;
         }
-        return intStart.isBefore(date) && intEnd.plusSeconds(1L).isAfter(date);
+        return dateStart.isBefore(date) && dateEnd.plusSeconds(1L).isAfter(date);
 
     }
 }

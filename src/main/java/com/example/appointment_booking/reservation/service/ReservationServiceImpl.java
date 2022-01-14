@@ -1,6 +1,6 @@
 package com.example.appointment_booking.reservation.service;
 
-import com.example.appointment_booking.DateConverter;
+import com.example.appointment_booking.reservation.DateConverter;
 import com.example.appointment_booking.company.persistence.entity.BusinessHours;
 import com.example.appointment_booking.company.persistence.entity.Company;
 import com.example.appointment_booking.exception.CustomException;
@@ -39,16 +39,11 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     public void createReservation(ReservationDto reservationDto) {
         Reservation reservation = convertDtoToEntity(reservationDto);
-        reservation.setDuration(workService.getDurationForServices(reservation.getServices()));
+        reservation.setDuration(workService.getDurationForWorks(reservation.getWorks()));
 
         if (isValidReservation(reservation)) {
             reservationRepository.save(reservation);
         }
-    }
-
-    @Override
-    public List<ReservationDto> getReservations() {
-        return reservationRepository.findAll().stream().map(this::convertEntityToDto).collect(Collectors.toList());
     }
 
     @Override
@@ -60,22 +55,32 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     boolean isValidReservation(Reservation reservation) {
-        Company company = getCompanyFromServices(reservation.getServices());
+        Company company = getCompanyFromWorks(reservation.getWorks());
+        List<Work> works = reservation.getWorks();
         LocalDateTime start = reservation.getDate();
         LocalDateTime end = start.plusMinutes(reservation.getDuration());
 
-        return areRequiredFieldsNonNull(reservation)
+        boolean isValid = areRequiredFieldsNonNull(reservation)
                 && isValidEmail(reservation.getEmail())
                 && isValidPhoneNumber(reservation.getPhone())
-                && isValidAppointment(company,start,end)
-                && isAvailableAppointment(company,start,end);
+                && isValidAppointment(company, start, end);
 
+        try {
+            isAvailableAppointment(company, start, end);
+        } catch (CustomException e) {
+            List<String> availableDate = getAvailableDates(works, start, start.plusDays(7), 1);
+            String message = availableDate.isEmpty() ? "No available appointment time can be found in the next 7 days" :
+                    "Next available appointment: " + availableDate.get(0);
+            throw new CustomException(e.getMessage() + message, e.getHttpStatus());
+        }
+        return isValid;
     }
 
-    boolean areRequiredFieldsNonNull(Reservation reservation) { //TODO
-        if (reservation == null || reservation.getName() == null || reservation.getPhone() == null
-                || reservation.getEmail() == null) {
-            throw new CustomException("Required fields cannot be null", HttpStatus.UNPROCESSABLE_ENTITY);
+    boolean areRequiredFieldsNonNull(Reservation reservation) {
+        if (reservation == null || reservation.getName() == null || "".equals(reservation.getName())
+                || reservation.getPhone() == null || "".equals(reservation.getPhone())
+                || reservation.getEmail() == null || "".equals(reservation.getEmail())) {
+            throw new CustomException("Required fields cannot be null or empty", HttpStatus.UNPROCESSABLE_ENTITY);
         }
         return true;
     }
@@ -95,8 +100,8 @@ public class ReservationServiceImpl implements ReservationService {
         return true;
     }
 
-    Company getCompanyFromServices(List<Work> services) {
-        List<Company> companies = services
+    Company getCompanyFromWorks(List<Work> works) {
+        List<Company> companies = works
                 .stream()
                 .map(Work::getCompany)
                 .distinct()
@@ -125,26 +130,26 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
-    public List<String> getValidDates(List<Work> services,LocalDateTime dateFrom, LocalDateTime dateTo, int max) {
+    public List<String> getAvailableDates(List<Work> works, LocalDateTime dateFrom, LocalDateTime dateTo, int max) {
         List<String> availableDates = new ArrayList<>();
-
-        int duration = workService.getDurationForServices(services);
-        Company company = getCompanyFromServices(services);
+        dateFrom= dateFrom.withMinute(0);
+        dateTo= dateTo.withMinute(0);
+        int duration = workService.getDurationForWorks(works);
+        Company company = getCompanyFromWorks(works);
         List<DayOfWeek> openDays = company.getBusinessHours().stream().map(BusinessHours::getDay).collect(Collectors.toList());
 
         LocalDateTime date = dateFrom;
         while (date.isBefore(dateTo) && availableDates.size() < max) {
-
             LocalDateTime dateEnd = date.plusMinutes(duration);
-            if(!openDays.contains(date.getDayOfWeek())){
+            if (!openDays.contains(date.getDayOfWeek())) {
                 date = date.plusDays(1).withHour(0).withMinute(0);
             }
             try {
-                isValidAppointment(company,date, dateEnd);
+                isValidAppointment(company, date, dateEnd);
                 isAvailableAppointment(company, date, dateEnd);
                 availableDates.add(DateConverter.convertDateToString(date));
-            } catch (CustomException ignored) {}
-            finally {
+            } catch (CustomException ignored) {
+            } finally {
                 date = date.plusMinutes(30);
             }
         }
@@ -152,14 +157,14 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     private boolean isAvailableAppointment(Company company, LocalDateTime searchedStart, LocalDateTime searchedEnd) {
-        for(Reservation res : getReservationsForCompany(company)){
+        for (Reservation res : getReservationsForCompany(company)) {
             LocalDateTime reservedStart = res.getDate();
             LocalDateTime reservedEnd = reservedStart.plusMinutes(res.getDuration());
             if (reservedStart.isAfter(searchedEnd)) {
                 break;
             }
             if (searchedStart.isBefore(reservedEnd) && reservedStart.isBefore(searchedEnd)) {
-                throw new CustomException("Overlapping reservations", HttpStatus.UNPROCESSABLE_ENTITY);
+                throw new CustomException("Overlapping reservations! ", HttpStatus.UNPROCESSABLE_ENTITY);
             }
         }
         return true;
@@ -174,17 +179,6 @@ public class ReservationServiceImpl implements ReservationService {
 
     }
 
-    private ReservationDto convertEntityToDto(Reservation reservation) {
-        return ReservationDto.builder()
-                .id(reservation.getId())
-                .name(reservation.getName())
-                .phone(reservation.getPhone())
-                .email(reservation.getEmail())
-                .date(DateConverter.convertDateToString(reservation.getDate()))
-                .services(reservationHelper.convertServicesListToString(reservation.getServices()))
-                .build();
-    }
-
     private Reservation convertDtoToEntity(ReservationDto reservationDto) {
         return Reservation.builder()
                 .id(reservationDto.getId())
@@ -192,7 +186,7 @@ public class ReservationServiceImpl implements ReservationService {
                 .phone(reservationDto.getPhone())
                 .email(reservationDto.getEmail())
                 .date(DateConverter.convertStringToDate(reservationDto.getDate()))
-                .services(reservationHelper.convertServicesStringToList(reservationDto.getServices()))
+                .works(reservationHelper.convertWorksStringToList(reservationDto.getWorks()))
                 .build();
     }
 }

@@ -1,4 +1,4 @@
-package com.example.appointment_booking;
+package com.example.appointment_booking.reservation;
 
 import com.example.appointment_booking.exception.CustomException;
 import org.springframework.http.HttpStatus;

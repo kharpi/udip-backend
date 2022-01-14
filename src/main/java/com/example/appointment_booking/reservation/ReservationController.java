@@ -1,6 +1,5 @@
 package com.example.appointment_booking.reservation;
 
-import com.example.appointment_booking.DateConverter;
 import com.example.appointment_booking.reservation.model.ReservationDto;
 import com.example.appointment_booking.reservation.service.ReservationService;
 import com.example.appointment_booking.work.persistence.entity.Work;
@@ -11,11 +10,14 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/reservation")
-@CrossOrigin(origins = "http://localhost:3000")
 public class ReservationController {
+
+    private final static int DEFAULT_LIMIT = 10;
+    private final static int DEFAULT_INTERVAL_DAYS = 7;
 
     private final ReservationService reservationService;
     private final WorkService workService;
@@ -33,24 +35,26 @@ public class ReservationController {
         reservationService.createReservation(reservationDto);
     }
 
-   @GetMapping("/{serviceIds}")
-    List<String> getAvailableDates(@PathVariable List<Long> serviceIds,@RequestParam(required = false) String from
-            ,@RequestParam(required = false) String to, @RequestParam(required = false) int max) {
+    @GetMapping("/{workIds}")
+    List<String> getAvailableDates(@PathVariable List<Long> workIds, @RequestParam Optional<String> from
+            , @RequestParam Optional<String> to, @RequestParam Optional<Integer> max) {
+        List<Work> works = workService.getWorksByIDs(workIds);
 
-        List<Work> services = workService.getServicesByIDs(serviceIds);
-        LocalDateTime dateFrom = DateConverter.convertStringToDate(from);
-        LocalDateTime dateTo = DateConverter.convertStringToDate(to);
+        LocalDateTime dateFrom = from.map(DateConverter::convertStringToDate)
+                .orElseGet(LocalDateTime::now);
 
-        return reservationService.getValidDates(services,dateFrom,dateTo,max);
+        LocalDateTime dateTo = to.map(DateConverter::convertStringToDate)
+                .orElseGet(() -> dateFrom.plusDays(DEFAULT_INTERVAL_DAYS));
+
+        int maxLimit = max.orElse(DEFAULT_LIMIT);
+
+        return reservationService.getAvailableDates(works, dateFrom, dateTo, maxLimit);
     }
 
     @DeleteMapping("/{id}")
     void deleteReservation(@PathVariable Long id) {
         reservationService.deleteReservation(id);
     }
-
-
-
 
 
 }

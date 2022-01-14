@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -42,7 +43,7 @@ public class WorkServiceImpl implements WorkService {
             throw new CustomException("The specified service cannot be found", HttpStatus.NOT_FOUND);
         }
         if (!isValidWork(workDto)) {
-            throw new CustomException("Required fields cannot be null", HttpStatus.NOT_FOUND);
+            throw new CustomException("Required fields cannot be null or empty", HttpStatus.NOT_FOUND);
         }
         workRepository.save(convertDtoToEntity(workDto));
     }
@@ -63,21 +64,23 @@ public class WorkServiceImpl implements WorkService {
     }
 
     @Override
-    public int getDurationForServices(List<Work> services) {
-        return services.stream().mapToInt(Work::getDuration).sum() + (BREAK_TIME_IN_MIN * (services.size() - 1));
+    public int getDurationForWorks(List<Work> works) {
+        return works.stream().mapToInt(Work::getDuration).sum() + (BREAK_TIME_IN_MIN * (works.size() - 1));
     }
 
     @Override
-    public List<Work> getServicesByIDs(List<Long> ids){ //TODO ha nem létezik az id
-        return ids.stream().map(i -> workRepository.getById(i)).collect(Collectors.toList());
+    public List<Work> getWorksByIDs(List<Long> ids) {
+        try {
+            return ids.stream().map(workRepository::getById).collect(Collectors.toList());
+        } catch (EntityNotFoundException e) {
+            throw new CustomException("Cannot find service with the specified ID", HttpStatus.NOT_FOUND);
+        }
     }
 
     private boolean isValidWork(WorkDto workDto) {
-        if (workDto == null || workDto.getName() == null || workDto.getDescription() == null
-                || workDto.getDuration() == null) {
-            return false;
-        }
-        return true;
+        return workDto != null && workDto.getName() != null && !"".equals(workDto.getName())
+                && workDto.getDescription() != null && !"".equals(workDto.getDescription())
+                && workDto.getDuration() != null && workDto.getDuration() >= 1;
     }
 
     private Work convertDtoToEntity(WorkDto workDto) {

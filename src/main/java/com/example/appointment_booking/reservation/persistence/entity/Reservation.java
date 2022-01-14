@@ -1,7 +1,6 @@
 package com.example.appointment_booking.reservation.persistence.entity;
 
 import com.example.appointment_booking.work.persistence.entity.Work;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,32 +28,16 @@ public class Reservation {
     private Integer duration;
 
     @ManyToMany
-    List<Work> services= new ArrayList<>();
+    List<Work> works = new ArrayList<>();
 
 
-   public Reservation(String name, String phone, String email, LocalDateTime date, List<Work> services) {
-        this.name = name;
-        this.phone = phone;
-        this.email = email;
-        this.date=date;
-        this.services = services;
-    }
-
-    public Reservation(String name, String phone, String email, LocalDateTime date,int duration, List<Work> services) {
-        this.name = name;
-        this.phone = phone;
-        this.email = email;
-        this.date=date;
-        this.duration = duration;
-        this.services = services;
-    }
-
-    public Reservation(String name, String phone, String email,LocalDateTime date, Work service) {
+    public Reservation(String name, String phone, String email, LocalDateTime date, int duration, List<Work> works) {
         this.name = name;
         this.phone = phone;
         this.email = email;
         this.date = date;
-        this.services.add(service);
+        this.duration = duration;
+        this.works = works;
     }
 
 }

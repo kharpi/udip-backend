@@ -18,7 +18,7 @@ import java.util.List;
 public class Work {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name="service_id")
+    @Column(name = "service_id")
     private Long id;
 
     private String name;
@@ -35,7 +35,7 @@ public class Work {
             inverseJoinColumns = @JoinColumn(name = "company_id"))
     private Company company;
 
-    @ManyToMany(mappedBy = "services")
+    @ManyToMany(mappedBy = "works")
     private List<Reservation> reservations;
 
     public Work(String name, String description, Integer duration, Company company) {

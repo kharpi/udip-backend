@@ -1,6 +1,7 @@
 package com.example.appointment_booking.work.model;
 
 import com.example.appointment_booking.reservation.persistence.entity.Reservation;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,6 +26,7 @@ public class WorkDto {
 
     private long companyId;
 
+    @JsonIgnore
     private List<Reservation> reservations = new ArrayList<>();
 
     public WorkDto(String name, String description, Integer duration) {
@@ -34,8 +36,7 @@ public class WorkDto {
         this.duration = duration;
     }
 
-    public WorkDto(Long id, String name, String description, Integer duration, long companyId) {
-        this.id = id;
+    public WorkDto(String name, String description, Integer duration, long companyId) {
         this.name = name;
         this.description = description;
         this.duration = duration;

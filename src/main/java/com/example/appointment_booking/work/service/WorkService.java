@@ -12,9 +12,9 @@ public interface WorkService {
 
     void deleteWork(Long id);
 
-    int getDurationForServices(List<Work> services);
+    int getDurationForWorks(List<Work> services);
 
-    List<Work> getServicesByIDs(List<Long> ids);
+    List<Work> getWorksByIDs(List<Long> ids);
 
     Work getWorkById(Long id);
 }

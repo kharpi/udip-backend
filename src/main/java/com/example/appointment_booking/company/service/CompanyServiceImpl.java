@@ -8,9 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 public class CompanyServiceImpl implements CompanyService {
 
@@ -32,7 +29,7 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     public void updateCompany(CompanyDto companyDto) {
-        if(!companyRepository.existsById(companyDto.getId())){
+        if (!companyRepository.existsById(companyDto.getId())) {
             throw new CustomException("The specified company cannot be found", HttpStatus.NOT_FOUND);
         }
         if (!isValidCompany(companyDto)) {
@@ -51,18 +48,10 @@ public class CompanyServiceImpl implements CompanyService {
         companyRepository.delete(company);
     }
 
-    @Override
-    public List<CompanyDto> getAllCompanies(){
-        return companyRepository.findAll().stream().map(this::convertEntityToDto).collect(Collectors.toList());
-    };
-
     private boolean isValidCompany(CompanyDto companyDto) {
-        if (companyDto == null || companyDto.getName() == null || "".equals(companyDto.getName())
-                || companyDto.getAddress() == null || "".equals(companyDto.getAddress())
-                || companyDto.getBusinessHours() == null || "".equals(companyDto.getBusinessHours())) {
-            return false;
-        }
-        return true;
+        return companyDto != null && companyDto.getName() != null && !"".equals(companyDto.getName())
+                && companyDto.getAddress() != null && !"".equals(companyDto.getAddress())
+                && companyDto.getBusinessHours() != null && !"".equals(companyDto.getBusinessHours());
     }
 
     private Company convertDtoToEntity(CompanyDto companyDto) {
@@ -74,16 +63,4 @@ public class CompanyServiceImpl implements CompanyService {
                 .works(companyDto.getWorks())
                 .build();
     }
-
-    private CompanyDto convertEntityToDto(Company company) {
-        return CompanyDto.builder()
-                .id(company.getId())
-                .name(company.getName())
-                .address(company.getAddress())
-                .businessHours(CompanyDto.convertBusinessHoursSetToString(company.getBusinessHours()))
-                .works(company.getWorks())
-                .build();
-    }
-
-
 }

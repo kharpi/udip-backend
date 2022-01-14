@@ -10,9 +10,7 @@ public interface ReservationService {
 
     void createReservation(ReservationDto reservationDto);
 
-    List<ReservationDto> getReservations();
-
-    List<String> getValidDates(List<Work> services,LocalDateTime dateFrom, LocalDateTime dateTo, int max);
+    List<String> getAvailableDates(List<Work> works, LocalDateTime dateFrom, LocalDateTime dateTo, int max);
 
     void deleteReservation(Long id);
 }

@@ -1,6 +1,5 @@
 package com.example.appointment_booking.reservation.model;
 
-import com.example.appointment_booking.DateConverter;
 import com.example.appointment_booking.work.persistence.entity.Work;
 import com.example.appointment_booking.work.service.WorkService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,16 +21,16 @@ public class ReservationHelper {
         this.workService = workService;
     }
 
-    public String convertServicesListToString(List<Work> services) {
+    public String convertWorksListToString(List<Work> works) {
         StringBuilder sb = new StringBuilder();
 
-        for (Work service : services) {
-            sb.append(service.getId()).append(SEPARATOR_BETWEEN_ENTRIES);
+        for (Work work : works) {
+            sb.append(work.getId()).append(SEPARATOR_BETWEEN_ENTRIES);
         }
         return !"".equals(sb.toString()) ? sb.substring(0, sb.length() - 1) : "";
     }
 
-    public List<Work> convertServicesStringToList(String services) {
-        return Arrays.stream(services.split(SEPARATOR_BETWEEN_ENTRIES)).map(s -> workService.getWorkById(Long.valueOf(s))).collect(Collectors.toList());
+    public List<Work> convertWorksStringToList(String works) {
+        return Arrays.stream(works.split(SEPARATOR_BETWEEN_ENTRIES)).map(s -> workService.getWorkById(Long.valueOf(s))).collect(Collectors.toList());
     }
 }
