@@ -8,8 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
-public class CompanyServiceImpl implements CompanyService {
+public class  CompanyServiceImpl implements CompanyService {
 
     CompanyRepository companyRepository;
 
@@ -46,6 +48,16 @@ public class CompanyServiceImpl implements CompanyService {
             throw new CustomException("Cannot delete company while there are services linked to it", HttpStatus.CONFLICT);
         }
         companyRepository.delete(company);
+    }
+
+    @Override
+    public List<Company> getAllCompanies() {
+        return companyRepository.findAll();
+    }
+
+    @Override
+    public Company getCompanyById(Long id) {
+        return companyRepository.findById(id).get();
     }
 
     private boolean isValidCompany(CompanyDto companyDto) {

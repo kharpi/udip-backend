@@ -1,6 +1,7 @@
 package com.example.appointment_booking.reservation.service;
 
 import com.example.appointment_booking.reservation.model.ReservationDto;
+import com.example.appointment_booking.reservation.persistence.entity.Reservation;
 import com.example.appointment_booking.work.persistence.entity.Work;
 
 import java.time.LocalDateTime;
@@ -13,4 +14,6 @@ public interface ReservationService {
     List<String> getAvailableDates(List<Work> works, LocalDateTime dateFrom, LocalDateTime dateTo, int max);
 
     void deleteReservation(Long id);
+
+    List<Reservation> getAllReservations();
 }

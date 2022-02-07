@@ -3,6 +3,8 @@ package com.example.appointment_booking.company.model;
 import com.example.appointment_booking.company.persistence.entity.BusinessHours;
 import com.example.appointment_booking.company.persistence.entity.BusinessHoursConverter;
 import com.example.appointment_booking.work.persistence.entity.Work;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,12 +17,14 @@ import java.util.Set;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonIgnoreProperties("ignoreUnknown=true")
 public class CompanyDto {
     private Long id;
     private String name;
     private String address;
     private String businessHours;
 
+    @JsonIgnore
     private List<Work> works;
 
     private final static BusinessHoursConverter businessHoursConverter = new BusinessHoursConverter();

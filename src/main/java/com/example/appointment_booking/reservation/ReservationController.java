@@ -1,6 +1,7 @@
 package com.example.appointment_booking.reservation;
 
 import com.example.appointment_booking.reservation.model.ReservationDto;
+import com.example.appointment_booking.reservation.persistence.entity.Reservation;
 import com.example.appointment_booking.reservation.service.ReservationService;
 import com.example.appointment_booking.work.persistence.entity.Work;
 import com.example.appointment_booking.work.service.WorkService;
@@ -29,13 +30,20 @@ public class ReservationController {
         this.workService = workService;
     }
 
+    @GetMapping
+    List<Reservation> getAllReservations() {
+        return reservationService.getAllReservations();
+    }
+
     @PostMapping("/create")
+    @CrossOrigin
     @ResponseStatus(HttpStatus.CREATED)
     void createReservation(@RequestBody ReservationDto reservationDto) {
         reservationService.createReservation(reservationDto);
     }
 
     @GetMapping("/{workIds}")
+    @CrossOrigin
     List<String> getAvailableDates(@PathVariable List<Long> workIds, @RequestParam Optional<String> from
             , @RequestParam Optional<String> to, @RequestParam Optional<Integer> max) {
         List<Work> works = workService.getWorksByIDs(workIds);
@@ -52,6 +60,7 @@ public class ReservationController {
     }
 
     @DeleteMapping("/{id}")
+    @CrossOrigin
     void deleteReservation(@PathVariable Long id) {
         reservationService.deleteReservation(id);
     }

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,7 +51,12 @@ public class WorkServiceImpl implements WorkService {
 
     @Override
     public Work getWorkById(Long id) {
-        return workRepository.getById(id);
+        return workRepository.findById(id).get();
+    }
+
+    @Override
+    public List<Work> getAllWorks() {
+        return workRepository.findAll();
     }
 
     @Override

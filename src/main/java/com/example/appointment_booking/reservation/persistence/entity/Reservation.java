@@ -1,6 +1,7 @@
 package com.example.appointment_booking.reservation.persistence.entity;
 
 import com.example.appointment_booking.work.persistence.entity.Work;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

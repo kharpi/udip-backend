@@ -1,6 +1,7 @@
 package com.example.appointment_booking.company.persistence.entity;
 
 import com.example.appointment_booking.work.persistence.entity.Work;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +17,7 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Company {
+public class  Company {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
@@ -30,6 +31,7 @@ public class Company {
     private Set<BusinessHours> businessHours;
 
     @OneToMany(mappedBy = "company")
+    @JsonIgnore
     private List<Work> works;
 
     public Company(String name, String address, HashSet<BusinessHours> businessHours) {

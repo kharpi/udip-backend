@@ -47,6 +47,11 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
+    public List<Reservation> getAllReservations() {
+        return reservationRepository.findAll();
+    }
+
+    @Override
     public void deleteReservation(Long id) {
         if (!reservationRepository.existsById(id)) {
             throw new CustomException("The specified reservation cannot be found", HttpStatus.NOT_FOUND);

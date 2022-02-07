@@ -2,6 +2,8 @@ package com.example.appointment_booking.work.persistence.entity;
 
 import com.example.appointment_booking.company.persistence.entity.Company;
 import com.example.appointment_booking.reservation.persistence.entity.Reservation;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -36,6 +38,7 @@ public class Work {
     private Company company;
 
     @ManyToMany(mappedBy = "works")
+    @JsonIgnore
     private List<Reservation> reservations;
 
     public Work(String name, String description, Integer duration, Company company) {

@@ -4,6 +4,7 @@ import com.example.appointment_booking.work.model.WorkDto;
 import com.example.appointment_booking.work.persistence.entity.Work;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface WorkService {
     void createWork(WorkDto workDtoDto);
@@ -17,4 +18,6 @@ public interface WorkService {
     List<Work> getWorksByIDs(List<Long> ids);
 
     Work getWorkById(Long id);
+
+    List<Work> getAllWorks();
 }
