@@ -35,6 +35,12 @@ public class ReservationController {
         return reservationService.getAllReservations();
     }
 
+    @GetMapping("/get/{id}")
+    @CrossOrigin
+    List<Reservation> getReservationsByServ(@PathVariable Long id) {
+        return reservationService.getReservationsByServ(id);
+    }
+
     @PostMapping("/create")
     @CrossOrigin
     @ResponseStatus(HttpStatus.CREATED)
